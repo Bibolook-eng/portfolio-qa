@@ -1,0 +1,61 @@
+# Workflow para deploy automático no GitHub Pages
+name: Deploy Portfolio QA
+
+on:
+  # Executa quando houver push na branch main
+  push:
+    branches: ["main"]
+
+  # Permite executar manualmente pelo Actions
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      # 1️⃣ Baixar o código
+      - name: Checkout do código
+        uses: actions/checkout@v4
+
+      # 2️⃣ Configurar o Node.js
+      - name: Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+          cache: 'npm'
+
+      # 3️⃣ Instalar dependências
+      - name: Instalar dependências
+        run: npm install
+
+      # 4️⃣ Fazer o build do projeto
+      - name: Fazer build
+        run: npm run build
+
+      # 5️⃣ Upload dos arquivos de build
+      - name: Upload para o Pages
+        uses: actions/upload-pages-artifact@v3
+        with:
+          # Aqui, apontamos para a pasta de saída do build
+          path: './dist'
+
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      # 6️⃣ Deploy para o GitHub Pages
+      - name: Deploy para GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
